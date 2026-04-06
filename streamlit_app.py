@@ -2,13 +2,15 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-import matplotlib.pyplot as plt
-from matplotlib.patches import Circle
 
 TARGET_MILES = 3000
 DATA_FILE = "running_tracker.csv"
 
-st.set_page_config(page_title="Patrick & Storm Running Tracker", page_icon="🏃", layout="wide")
+st.set_page_config(
+    page_title="Patrick & Storm Running Tracker",
+    page_icon="🏃",
+    layout="wide"
+)
 
 def to_miles(distance, unit):
     if unit == "km":
@@ -46,66 +48,152 @@ def get_summary(df):
     remaining = max(TARGET_MILES - combined_total, 0)
     return patrick_total, storm_total, combined_total, remaining
 
-def draw_journey(patrick_total, storm_total, target):
-    fig, ax = plt.subplots(figsize=(12, 3))
+def render_cartoon_journey(patrick_total, storm_total, target):
+    storm_progress = min(storm_total / target, 0.5)
+    patrick_progress = min(patrick_total / target, 0.5)
 
-    patrick_progress = min(patrick_total / target, 1.0)
-    storm_progress = min(storm_total / target, 1.0)
+    storm_left = 8 + storm_progress * 70
+    patrick_left = 92 - patrick_progress * 70
 
-    patrick_x = patrick_progress
-    storm_x = 1 - storm_progress
+    met = (patrick_total + storm_total) >= target
 
-    if patrick_x > storm_x:
-        meet_x = 0.5 * (patrick_x + storm_x)
-        patrick_x = meet_x
-        storm_x = meet_x
+    if met:
+        storm_left = 48
+        patrick_left = 52
 
-    ax.plot([0, 1], [0.5, 0.5], linewidth=6)
+    st.markdown(f"""
+    <style>
+    .journey-card {{
+        position: relative;
+        width: 100%;
+        height: 300px;
+        border-radius: 30px;
+        background: linear-gradient(180deg, #dff4ff 0%, #fff6ee 100%);
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }}
 
-    ax.scatter([0], [0.5], s=300, marker='s')
-    ax.text(0, 0.62, "Kamloops, BC", ha="center", fontsize=11, fontweight="bold")
+    .journey-title {{
+        text-align: center;
+        font-size: 30px;
+        font-weight: 800;
+        padding-top: 18px;
+        color: #2f2f2f;
+    }}
 
-    ax.scatter([1], [0.5], s=300, marker='s')
-    ax.text(1, 0.62, "Wesley Chapel, FL", ha="center", fontsize=11, fontweight="bold")
+    .route-line {{
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        top: 58%;
+        border-top: 6px dashed #8ecae6;
+    }}
 
-    ax.scatter([patrick_x], [0.45], s=500)
-    ax.text(patrick_x, 0.33, "Patrick", ha="center", fontsize=11, fontweight="bold")
+    .city-left, .city-right {{
+        position: absolute;
+        top: 71%;
+        font-size: 18px;
+        font-weight: 700;
+        color: #444;
+    }}
 
-    ax.scatter([storm_x], [0.55], s=500)
-    ax.text(storm_x, 0.67, "Storm", ha="center", fontsize=11, fontweight="bold")
+    .city-left {{
+        left: 5%;
+    }}
 
-    if patrick_x >= storm_x:
-        ax.text(0.5, 0.15, "❤️ You made it to each other! ❤️", ha="center", fontsize=14, fontweight="bold")
-    else:
-        ax.text(0.5, 0.15, "Keep running toward each other!", ha="center", fontsize=12)
+    .city-right {{
+        right: 5%;
+    }}
 
-    ax.set_xlim(-0.05, 1.05)
-    ax.set_ylim(0, 1)
-    ax.axis("off")
+    .avatar {{
+        position: absolute;
+        top: 42%;
+        transform: translateX(-50%);
+        font-size: 46px;
+        transition: left 0.6s ease-in-out;
+    }}
 
-    return fig
+    .name-label {{
+        position: absolute;
+        top: 31%;
+        transform: translateX(-50%);
+        font-size: 17px;
+        font-weight: 800;
+        color: #333;
+    }}
 
-def draw_contribution_chart(patrick_total, storm_total):
-    fig, ax = plt.subplots(figsize=(4, 4))
+    .storm {{
+        left: {storm_left}%;
+    }}
 
-    total = patrick_total + storm_total
-    if total == 0:
-        ax.text(0.5, 0.5, "No runs yet", ha="center", va="center", fontsize=12)
-        ax.axis("off")
-        return fig
+    .patrick {{
+        left: {patrick_left}%;
+    }}
 
-    ax.pie(
-        [patrick_total, storm_total],
-        labels=["Patrick", "Storm"],
-        autopct="%1.1f%%",
-        startangle=90,
-        wedgeprops={"width": 0.45}
-    )
-    ax.set_title("Contribution Split")
-    return fig
+    .heart {{
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 42px;
+    }}
+
+    .meeting-text {{
+        position: absolute;
+        width: 100%;
+        bottom: 18px;
+        text-align: center;
+        font-size: 19px;
+        font-weight: 700;
+        color: #444;
+    }}
+
+    .small-cloud {{
+        position: absolute;
+        font-size: 26px;
+        opacity: 0.55;
+    }}
+
+    .cloud1 {{
+        top: 14%;
+        left: 14%;
+    }}
+
+    .cloud2 {{
+        top: 18%;
+        right: 18%;
+    }}
+    </style>
+
+    <div class="journey-card">
+        <div class="journey-title">Patrick & Storm Running to Each Other</div>
+
+        <div class="small-cloud cloud1">☁️</div>
+        <div class="small-cloud cloud2">☁️</div>
+
+        <div class="route-line"></div>
+
+        <div class="heart">❤️</div>
+
+        <div class="name-label storm">Storm</div>
+        <div class="avatar storm">🏃‍♀️</div>
+
+        <div class="name-label patrick">Patrick</div>
+        <div class="avatar patrick">🏃</div>
+
+        <div class="city-left">📍 Kamloops, BC</div>
+        <div class="city-right">📍 Wesley Chapel, FL</div>
+
+        <div class="meeting-text">
+            {"You made it to each other! 💕" if met else "Every run brings you closer 💫"}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.title("🏃 Patrick & Storm Running Tracker")
-st.write("Running across the distance from Kamloops, BC to Wesley Chapel, FL.")
+st.write("Track your runs as you move from Kamloops, BC and Wesley Chapel, FL toward each other.")
 
 df = load_data()
 patrick_total, storm_total, combined_total, remaining = get_summary(df)
@@ -120,32 +208,27 @@ progress = min(combined_total / TARGET_MILES, 1.0)
 st.progress(progress)
 st.caption(f"{progress * 100:.1f}% of the journey completed")
 
-st.pyplot(draw_journey(patrick_total, storm_total, TARGET_MILES))
+render_cartoon_journey(patrick_total, storm_total, TARGET_MILES)
 
-left, right = st.columns([1, 1])
+st.subheader("Add a Run")
 
-with left:
-    st.subheader("Add a Run")
-    with st.form("run_form"):
-        person = st.selectbox("Who ran?", ["Patrick", "Storm"])
-        distance = st.number_input("Distance", min_value=0.0, step=0.1)
-        unit = st.selectbox("Unit", ["miles", "km"])
-        submitted = st.form_submit_button("Add Run")
+with st.form("run_form"):
+    person = st.selectbox("Who ran?", ["Patrick", "Storm"])
+    distance = st.number_input("Distance", min_value=0.0, step=0.1)
+    unit = st.selectbox("Unit", ["miles", "km"])
+    submitted = st.form_submit_button("Add Run")
 
-        if submitted:
-            if distance > 0:
-                add_run(person, distance, unit)
-                st.success(f"Added {distance} {unit} for {person}.")
-                st.rerun()
-            else:
-                st.error("Please enter a distance greater than 0.")
-
-with right:
-    st.subheader("Who has contributed more?")
-    st.pyplot(draw_contribution_chart(patrick_total, storm_total))
+    if submitted:
+        if distance > 0:
+            add_run(person, distance, unit)
+            st.success(f"Added {distance} {unit} for {person}.")
+            st.rerun()
+        else:
+            st.error("Please enter a distance greater than 0.")
 
 st.subheader("Recent Runs")
 if not df.empty:
-    st.dataframe(df.sort_values("date", ascending=False), use_container_width=True)
+    recent_df = df.sort_values("date", ascending=False).copy()
+    st.dataframe(recent_df, use_container_width=True, hide_index=True)
 else:
     st.info("No runs added yet.")
