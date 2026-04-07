@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
+from textwrap import dedent
 
 TARGET_MILES = 3000
 DATA_FILE = "running_tracker.csv"
@@ -61,7 +62,7 @@ def render_cartoon_journey(patrick_total, storm_total, target):
         storm_left = 48
         patrick_left = 52
 
-    st.markdown(f"""
+    html = dedent(f"""
     <style>
     .journey-card {{
         position: relative;
@@ -190,7 +191,8 @@ def render_cartoon_journey(patrick_total, storm_total, target):
             {"You made it to each other! 💕" if met else "Every run brings you closer 💫"}
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
+    st.markdown(html, unsafe_allow_html=True)
 
 st.title("🏃 Patrick & Storm Running Tracker")
 st.write("Track your runs as you move from Kamloops, BC and Wesley Chapel, FL toward each other.")
