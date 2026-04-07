@@ -1,8 +1,8 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import os
 from datetime import datetime
-from textwrap import dedent
 
 TARGET_MILES = 3000
 DATA_FILE = "running_tracker.csv"
@@ -62,137 +62,147 @@ def render_cartoon_journey(patrick_total, storm_total, target):
         storm_left = 48
         patrick_left = 52
 
-    html = dedent(f"""
-    <style>
-    .journey-card {{
-        position: relative;
-        width: 100%;
-        height: 300px;
-        border-radius: 30px;
-        background: linear-gradient(180deg, #dff4ff 0%, #fff6ee 100%);
-        overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.10);
-        margin-top: 10px;
-        margin-bottom: 20px;
-    }}
+    message = "You made it to each other! 💕" if met else "Every run brings you closer 💫"
 
-    .journey-title {{
-        text-align: center;
-        font-size: 30px;
-        font-weight: 800;
-        padding-top: 18px;
-        color: #2f2f2f;
-    }}
+    html_code = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                font-family: Arial, sans-serif;
+            }}
 
-    .route-line {{
-        position: absolute;
-        left: 8%;
-        right: 8%;
-        top: 58%;
-        border-top: 6px dashed #8ecae6;
-    }}
+            .journey-card {{
+                position: relative;
+                width: 100%;
+                height: 320px;
+                border-radius: 30px;
+                background: linear-gradient(180deg, #dff4ff 0%, #fff6ee 100%);
+                overflow: hidden;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+            }}
 
-    .city-left, .city-right {{
-        position: absolute;
-        top: 71%;
-        font-size: 18px;
-        font-weight: 700;
-        color: #444;
-    }}
+            .journey-title {{
+                text-align: center;
+                font-size: 30px;
+                font-weight: 800;
+                padding-top: 18px;
+                color: #2f2f2f;
+            }}
 
-    .city-left {{
-        left: 5%;
-    }}
+            .route-line {{
+                position: absolute;
+                left: 8%;
+                right: 8%;
+                top: 58%;
+                border-top: 6px dashed #8ecae6;
+            }}
 
-    .city-right {{
-        right: 5%;
-    }}
+            .city-left, .city-right {{
+                position: absolute;
+                top: 72%;
+                font-size: 18px;
+                font-weight: 700;
+                color: #444;
+            }}
 
-    .avatar {{
-        position: absolute;
-        top: 42%;
-        transform: translateX(-50%);
-        font-size: 46px;
-        transition: left 0.6s ease-in-out;
-    }}
+            .city-left {{
+                left: 5%;
+            }}
 
-    .name-label {{
-        position: absolute;
-        top: 31%;
-        transform: translateX(-50%);
-        font-size: 17px;
-        font-weight: 800;
-        color: #333;
-    }}
+            .city-right {{
+                right: 5%;
+            }}
 
-    .storm {{
-        left: {storm_left}%;
-    }}
+            .avatar {{
+                position: absolute;
+                top: 42%;
+                transform: translateX(-50%);
+                font-size: 48px;
+            }}
 
-    .patrick {{
-        left: {patrick_left}%;
-    }}
+            .name-label {{
+                position: absolute;
+                top: 31%;
+                transform: translateX(-50%);
+                font-size: 17px;
+                font-weight: 800;
+                color: #333;
+            }}
 
-    .heart {{
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 42px;
-    }}
+            .storm {{
+                left: {storm_left}%;
+            }}
 
-    .meeting-text {{
-        position: absolute;
-        width: 100%;
-        bottom: 18px;
-        text-align: center;
-        font-size: 19px;
-        font-weight: 700;
-        color: #444;
-    }}
+            .patrick {{
+                left: {patrick_left}%;
+            }}
 
-    .small-cloud {{
-        position: absolute;
-        font-size: 26px;
-        opacity: 0.55;
-    }}
+            .heart {{
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 42px;
+            }}
 
-    .cloud1 {{
-        top: 14%;
-        left: 14%;
-    }}
+            .meeting-text {{
+                position: absolute;
+                width: 100%;
+                bottom: 18px;
+                text-align: center;
+                font-size: 19px;
+                font-weight: 700;
+                color: #444;
+            }}
 
-    .cloud2 {{
-        top: 18%;
-        right: 18%;
-    }}
-    </style>
+            .small-cloud {{
+                position: absolute;
+                font-size: 26px;
+                opacity: 0.60;
+            }}
 
-    <div class="journey-card">
-        <div class="journey-title">Patrick & Storm Running to Each Other</div>
+            .cloud1 {{
+                top: 14%;
+                left: 14%;
+            }}
 
-        <div class="small-cloud cloud1">☁️</div>
-        <div class="small-cloud cloud2">☁️</div>
+            .cloud2 {{
+                top: 18%;
+                right: 18%;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="journey-card">
+            <div class="journey-title">Patrick & Storm Running to Each Other</div>
 
-        <div class="route-line"></div>
+            <div class="small-cloud cloud1">☁️</div>
+            <div class="small-cloud cloud2">☁️</div>
 
-        <div class="heart">❤️</div>
+            <div class="route-line"></div>
+            <div class="heart">❤️</div>
 
-        <div class="name-label storm">Storm</div>
-        <div class="avatar storm">🏃‍♀️</div>
+            <div class="name-label storm">Storm</div>
+            <div class="avatar storm">🏃‍♀️</div>
 
-        <div class="name-label patrick">Patrick</div>
-        <div class="avatar patrick">🏃</div>
+            <div class="name-label patrick">Patrick</div>
+            <div class="avatar patrick">🏃</div>
 
-        <div class="city-left">📍 Kamloops, BC</div>
-        <div class="city-right">📍 Wesley Chapel, FL</div>
+            <div class="city-left">📍 Kamloops, BC</div>
+            <div class="city-right">📍 Wesley Chapel, FL</div>
 
-        <div class="meeting-text">
-            {"You made it to each other! 💕" if met else "Every run brings you closer 💫"}
+            <div class="meeting-text">{message}</div>
         </div>
-    </div>
-    """)
-    st.markdown(html, unsafe_allow_html=True)
+    </body>
+    </html>
+    """
+
+    components.html(html_code, height=340)
 
 st.title("🏃 Patrick & Storm Running Tracker")
 st.write("Track your runs as you move from Kamloops, BC and Wesley Chapel, FL toward each other.")
