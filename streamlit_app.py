@@ -68,6 +68,7 @@ def render_cartoon_journey(patrick_total, storm_total, target):
     <!DOCTYPE html>
     <html>
     <head>
+        <meta charset="utf-8">
         <style>
             body {{
                 margin: 0;
@@ -118,20 +119,21 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 right: 5%;
             }}
 
-            
-            .avatar {
+            .avatar {{
                 position: absolute;
                 top: 42%;
                 font-size: 48px;
-            }
+            }}
 
-            .avatar.storm {
+            .avatar.storm {{
+                left: {storm_left}%;
                 transform: translateX(-50%) scaleX(-1);
-            }
+            }}
 
-            .avatar.patrick {
+            .avatar.patrick {{
+                left: {patrick_left}%;
                 transform: translateX(-50%);
-            }
+            }}
 
             .name-label {{
                 position: absolute;
@@ -142,11 +144,11 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 color: #333;
             }}
 
-            .storm {{
+            .name-label.storm {{
                 left: {storm_left}%;
             }}
 
-            .patrick {{
+            .name-label.patrick {{
                 left: {patrick_left}%;
             }}
 
