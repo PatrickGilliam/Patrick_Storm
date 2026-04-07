@@ -118,12 +118,20 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 right: 5%;
             }}
 
-            .avatar {{
+            
+            .avatar {
                 position: absolute;
                 top: 42%;
-                transform: translateX(-50%);
                 font-size: 48px;
-            }}
+            }
+
+            .avatar.storm {
+                transform: translateX(-50%) scaleX(-1);
+            }
+
+            .avatar.patrick {
+                transform: translateX(-50%);
+            }
 
             .name-label {{
                 position: absolute;
