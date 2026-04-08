@@ -18,14 +18,32 @@ def to_miles(distance, unit):
         return distance * 0.621371
     return distance
 
+def empty_df():
+    return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
+
 def load_data():
     try:
         response = requests.get(APPS_SCRIPT_URL, timeout=20)
-        response.raise_for_status()
-        data = response.json()
+        raw_text = response.text.strip()
+
+        if response.status_code != 200:
+            st.error(f"Apps Script GET failed: {response.status_code}")
+            st.code(raw_text[:2000] if raw_text else "(empty response)")
+            return empty_df()
+
+        if not raw_text:
+            st.error("Apps Script returned an empty response.")
+            return empty_df()
+
+        try:
+            data = response.json()
+        except Exception:
+            st.error("Apps Script did not return JSON.")
+            st.code(raw_text[:2000])
+            return empty_df()
 
         if not data:
-            return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
+            return empty_df()
 
         df = pd.DataFrame(data)
 
@@ -37,13 +55,12 @@ def load_data():
         df = df[expected_cols].copy()
         df["distance_input"] = pd.to_numeric(df["distance_input"], errors="coerce").fillna(0.0)
         df["distance_miles"] = pd.to_numeric(df["distance_miles"], errors="coerce").fillna(0.0)
-
         return df
 
     except Exception as e:
         st.error("Could not load runs from Google Sheets.")
         st.exception(e)
-        return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
+        return empty_df()
 
 def add_run(person, distance, unit):
     miles = to_miles(distance, unit)
@@ -57,9 +74,16 @@ def add_run(person, distance, unit):
     }
 
     response = requests.post(APPS_SCRIPT_URL, json=payload, timeout=20)
-    response.raise_for_status()
+    raw_text = response.text.strip()
 
-    result = response.json()
+    if response.status_code != 200:
+        raise RuntimeError(f"Apps Script POST failed: {response.status_code}\n{raw_text[:500]}")
+
+    try:
+        result = response.json()
+    except Exception:
+        raise RuntimeError(f"Apps Script did not return JSON. Response was: {raw_text[:500]}")
+
     if result.get("status") != "success":
         raise RuntimeError(result.get("message", "Unknown error while saving run."))
 
@@ -97,7 +121,6 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 background: transparent;
                 font-family: Arial, sans-serif;
             }}
-
             .journey-card {{
                 position: relative;
                 width: 100%;
@@ -107,7 +130,6 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 overflow: hidden;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.10);
             }}
-
             .journey-title {{
                 text-align: center;
                 font-size: 30px;
@@ -115,7 +137,6 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 padding-top: 18px;
                 color: #2f2f2f;
             }}
-
             .route-line {{
                 position: absolute;
                 left: 8%;
@@ -123,7 +144,6 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 top: 58%;
                 border-top: 6px dashed #8ecae6;
             }}
-
             .city-left, .city-right {{
                 position: absolute;
                 top: 72%;
@@ -131,31 +151,21 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 font-weight: 700;
                 color: #444;
             }}
-
-            .city-left {{
-                left: 5%;
-            }}
-
-            .city-right {{
-                right: 5%;
-            }}
-
+            .city-left {{ left: 5%; }}
+            .city-right {{ right: 5%; }}
             .avatar {{
                 position: absolute;
                 top: 42%;
                 font-size: 48px;
             }}
-
             .avatar.storm {{
                 left: {storm_left}%;
                 transform: translateX(-50%) scaleX(-1);
             }}
-
             .avatar.patrick {{
                 left: {patrick_left}%;
                 transform: translateX(-50%);
             }}
-
             .name-label {{
                 position: absolute;
                 top: 31%;
@@ -164,15 +174,8 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 font-weight: 800;
                 color: #333;
             }}
-
-            .name-label.storm {{
-                left: {storm_left}%;
-            }}
-
-            .name-label.patrick {{
-                left: {patrick_left}%;
-            }}
-
+            .name-label.storm {{ left: {storm_left}%; }}
+            .name-label.patrick {{ left: {patrick_left}%; }}
             .heart {{
                 position: absolute;
                 left: 50%;
@@ -180,7 +183,6 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 transform: translate(-50%, -50%);
                 font-size: 42px;
             }}
-
             .meeting-text {{
                 position: absolute;
                 width: 100%;
@@ -190,49 +192,33 @@ def render_cartoon_journey(patrick_total, storm_total, target):
                 font-weight: 700;
                 color: #444;
             }}
-
             .small-cloud {{
                 position: absolute;
                 font-size: 26px;
                 opacity: 0.60;
             }}
-
-            .cloud1 {{
-                top: 14%;
-                left: 14%;
-            }}
-
-            .cloud2 {{
-                top: 18%;
-                right: 18%;
-            }}
+            .cloud1 {{ top: 14%; left: 14%; }}
+            .cloud2 {{ top: 18%; right: 18%; }}
         </style>
     </head>
     <body>
         <div class="journey-card">
             <div class="journey-title">Patrick & Storm Running to Each Other</div>
-
             <div class="small-cloud cloud1">☁️</div>
             <div class="small-cloud cloud2">☁️</div>
-
             <div class="route-line"></div>
             <div class="heart">❤️</div>
-
             <div class="name-label storm">Storm</div>
             <div class="avatar storm">🏃‍♀️</div>
-
             <div class="name-label patrick">Patrick</div>
             <div class="avatar patrick">🏃</div>
-
             <div class="city-left">📍 Kamloops, BC</div>
             <div class="city-right">📍 Wesley Chapel, FL</div>
-
             <div class="meeting-text">{message}</div>
         </div>
     </body>
     </html>
     """
-
     components.html(html_code, height=340)
 
 st.title("🏃 Patrick & Storm Running Tracker")
