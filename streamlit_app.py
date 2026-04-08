@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 
 TARGET_MILES = 3000
-APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxRJCILZsgzN1TJascx_c9t8x13jJ4Dv-QRjbOfx2PHWg_eCCAA2MCq5WgFNp-kQOPXcQ/exec"
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-OjU29gzkBYjcdnWtsDCZIyKGOdxCY5_wUX49V2f36ZiIAX1moSA79WQ3-sEEH8ik7A/exec"
 
 st.set_page_config(
     page_title="Patrick & Storm Running Tracker",
