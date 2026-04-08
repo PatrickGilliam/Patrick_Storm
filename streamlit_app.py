@@ -29,21 +29,34 @@ def load_data():
         if response.status_code != 200:
             st.error(f"Apps Script GET failed: {response.status_code}")
             st.code(raw_text[:2000] if raw_text else "(empty response)")
-            return empty_df()
+            return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
 
         if not raw_text:
-            st.error("Apps Script returned an empty response.")
-            return empty_df()
+            return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
 
         try:
             data = response.json()
         except Exception:
             st.error("Apps Script did not return JSON.")
             st.code(raw_text[:2000])
-            return empty_df()
+            return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
 
-        if not data:
-            return empty_df()
+        # If Apps Script returned an error object
+        if isinstance(data, dict):
+            if data.get("status") == "error":
+                st.error(f"Apps Script error: {data.get('message', 'Unknown error')}")
+                return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
+            
+            # If it returned a single row object, wrap it in a list
+            data = [data]
+
+        if not isinstance(data, list):
+            st.error("Apps Script returned unexpected JSON format.")
+            st.code(str(data))
+            return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
+
+        if len(data) == 0:
+            return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
 
         df = pd.DataFrame(data)
 
@@ -55,12 +68,13 @@ def load_data():
         df = df[expected_cols].copy()
         df["distance_input"] = pd.to_numeric(df["distance_input"], errors="coerce").fillna(0.0)
         df["distance_miles"] = pd.to_numeric(df["distance_miles"], errors="coerce").fillna(0.0)
+
         return df
 
     except Exception as e:
         st.error("Could not load runs from Google Sheets.")
         st.exception(e)
-        return empty_df()
+        return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
 
 def add_run(person, distance, unit):
     miles = to_miles(distance, unit)
