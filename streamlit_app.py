@@ -1,11 +1,11 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
-import os
+import requests
 from datetime import datetime
 
 TARGET_MILES = 3000
-DATA_FILE = "running_tracker.csv"
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxRJCILZsgzN1TJascx_c9t8x13jJ4Dv-QRjbOfx2PHWg_eCCAA2MCq5WgFNp-kQOPXcQ/exec"
 
 st.set_page_config(
     page_title="Patrick & Storm Running Tracker",
@@ -19,28 +19,49 @@ def to_miles(distance, unit):
     return distance
 
 def load_data():
-    if not os.path.exists(DATA_FILE):
-        df = pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
-        df.to_csv(DATA_FILE, index=False)
-    return pd.read_csv(DATA_FILE)
+    try:
+        response = requests.get(APPS_SCRIPT_URL, timeout=20)
+        response.raise_for_status()
+        data = response.json()
 
-def save_data(df):
-    df.to_csv(DATA_FILE, index=False)
+        if not data:
+            return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
+
+        df = pd.DataFrame(data)
+
+        expected_cols = ["date", "person", "distance_input", "unit", "distance_miles"]
+        for col in expected_cols:
+            if col not in df.columns:
+                df[col] = ""
+
+        df = df[expected_cols].copy()
+        df["distance_input"] = pd.to_numeric(df["distance_input"], errors="coerce").fillna(0.0)
+        df["distance_miles"] = pd.to_numeric(df["distance_miles"], errors="coerce").fillna(0.0)
+
+        return df
+
+    except Exception as e:
+        st.error("Could not load runs from Google Sheets.")
+        st.exception(e)
+        return pd.DataFrame(columns=["date", "person", "distance_input", "unit", "distance_miles"])
 
 def add_run(person, distance, unit):
-    df = load_data()
     miles = to_miles(distance, unit)
 
-    new_row = pd.DataFrame([{
+    payload = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "person": person,
         "distance_input": distance,
         "unit": unit,
         "distance_miles": miles
-    }])
+    }
 
-    df = pd.concat([df, new_row], ignore_index=True)
-    save_data(df)
+    response = requests.post(APPS_SCRIPT_URL, json=payload, timeout=20)
+    response.raise_for_status()
+
+    result = response.json()
+    if result.get("status") != "success":
+        raise RuntimeError(result.get("message", "Unknown error while saving run."))
 
 def get_summary(df):
     patrick_total = df[df["person"] == "Patrick"]["distance_miles"].sum()
@@ -242,9 +263,13 @@ with st.form("run_form"):
 
     if submitted:
         if distance > 0:
-            add_run(person, distance, unit)
-            st.success(f"Added {distance} {unit} for {person}.")
-            st.rerun()
+            try:
+                add_run(person, distance, unit)
+                st.success(f"Added {distance} {unit} for {person}.")
+                st.rerun()
+            except Exception as e:
+                st.error("Could not save the run.")
+                st.exception(e)
         else:
             st.error("Please enter a distance greater than 0.")
 
